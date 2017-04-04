@@ -7,7 +7,7 @@ triggers:
   - '**/*.py'
   env:
     DEBUG: "1"
-  cmd: go vet && go test -v && go build && ./wwwatch -interval=60
+  cmd: go vet && go test -v && go build && ./wwwatch -interval=100
   shell: true
   delay: 100ms
   stop_timeout: 500ms

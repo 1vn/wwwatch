@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"path"
 	"path/filepath"
@@ -26,17 +27,19 @@ func gracefulExit(err error) {
 var notify *notificator.Notificator
 
 func main() {
+	rand.Seed(42)
+
+	var interval int
+	flag.IntVar(&interval, "interval", 60, "number of seconds between each poll")
+	log.Println("polling interval: ", interval)
+
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	var interval int
-	flag.IntVar(&interval, "interval", 60, "number of seconds between each poll")
-	flag.Parse()
-
-	log.Println("polling interval: ", interval)
 	cache := make(map[string][]string)
+
 	configFile, err := os.Open(fmt.Sprintf("%s/%s", dir, "config.json"))
 	if err != nil {
 		gracefulExit(err)
@@ -73,11 +76,11 @@ func main() {
 			if cur, ok := cache[site]; ok {
 				if len(cache[site]) != len(curImgs) {
 					changed = true
-				}
-
-				for i, img := range curImgs {
-					if img != cur[i] {
-						changed = true
+				} else {
+					for i, img := range curImgs {
+						if img != cur[i] {
+							changed = true
+						}
 					}
 				}
 			}
@@ -96,6 +99,8 @@ func main() {
 			cache[site] = curImgs
 		}
 
-		time.Sleep(time.Second * time.Duration(interval))
+		sleepFor := time.Second * time.Duration(interval+rand.Intn(500))
+		log.Printf("waiting %v before next poll", sleepFor)
+		time.Sleep(sleepFor)
 	}
 }
