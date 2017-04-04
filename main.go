@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -30,6 +31,11 @@ func main() {
 		log.Fatal(err)
 	}
 
+	var interval int
+	flag.IntVar(&interval, "interval", 60, "number of seconds between each poll")
+	flag.Parse()
+
+	log.Println("polling interval: ", interval)
 	cache := make(map[string][]string)
 	configFile, err := os.Open(fmt.Sprintf("%s/%s", dir, "config.json"))
 	if err != nil {
@@ -44,6 +50,7 @@ func main() {
 	}
 
 	for {
+		log.Println("Wwwatching...")
 		for _, site := range conf.WatchList {
 			doc, err := goquery.NewDocument(site)
 			if err != nil {
@@ -52,7 +59,6 @@ func main() {
 
 			curImgs := make([]string, 0)
 
-			log.Println(site)
 			doc.Find("img").Each(func(i int, s *goquery.Selection) {
 				src, ok := s.Attr("src")
 				if ok {
@@ -82,11 +88,14 @@ func main() {
 					AppName:     "wwwatch",
 				})
 				notify.Push("Site Changed", site, "/home/user/icon.png", notificator.UR_CRITICAL)
+				log.Println("[CHANGED]", site)
+			} else {
+				log.Println("[NO CHANGE]", site)
 			}
 
 			cache[site] = curImgs
 		}
 
-		time.Sleep(time.Second * 30)
+		time.Sleep(time.Second * time.Duration(interval))
 	}
 }
